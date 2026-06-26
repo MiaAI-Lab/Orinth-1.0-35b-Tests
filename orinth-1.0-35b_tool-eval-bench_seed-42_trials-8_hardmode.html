@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmark Dashboard — ornith-1.0-35b-Q8_0.gguf</title>
+<style>
+  :root {
+    --bg: #f4f5f9;
+    --surface: #ffffff;
+    --surface2: #f0f1f5;
+    --border: #e2e4ea;
+    --text: #1a1d27;
+    --text-dim: #6b7084;
+    --accent: #5b52e0;
+    --accent-glow: rgba(91, 82, 224, 0.08);
+    --green: #16a34a;
+    --green-dim: rgba(22, 163, 74, 0.08);
+    --yellow: #d97706;
+    --yellow-dim: rgba(217, 119, 6, 0.08);
+    --red: #dc2626;
+    --red-dim: rgba(220, 38, 38, 0.08);
+    --blue: #2563eb;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(91, 82, 224, 0.15);
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #1a1d27, #5b52e0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header .subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-top: 0.4rem;
+  }
+  .badges {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-vllm { background: rgba(96, 165, 250, 0.12); color: var(--blue); }
+  .badge-quant { background: rgba(108, 99, 255, 0.12); color: var(--accent); }
+  .badge-trials { background: rgba(52, 211, 153, 0.12); color: var(--green); }
+  .badge-host { background: rgba(251, 191, 36, 0.12); color: var(--yellow); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-title .icon {
+    font-size: 1rem;
+  }
+
+  /* ── Hero Score ── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .hero-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .hero-stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .hero-stat.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .hero-stat.accent::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .hero-stat.yellow::before { background: linear-gradient(90deg, var(--yellow), transparent); }
+  .hero-stat.blue::before { background: linear-gradient(90deg, var(--blue), transparent); }
+  .hero-stat .value {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .hero-stat.green .value { color: var(--green); }
+  .hero-stat.accent .value { color: var(--accent); }
+  .hero-stat.yellow .value { color: var(--yellow); }
+  .hero-stat.blue .value { color: var(--blue); }
+  .hero-stat .label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 0.4rem;
+    font-weight: 500;
+  }
+  .hero-stat .sub {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+  }
+
+  /* ── Score Ring ── */
+  .score-ring {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 1rem;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .score-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .score-ring .score-num {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .score-ring .score-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 0.2rem;
+  }
+
+  /* ── Context Table ── */
+  .context-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+  .context-item {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+  }
+  .context-item .ctx-label {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .context-item .ctx-value {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-top: 0.15rem;
+  }
+
+  /* ── Scenario Table ── */
+  .scenario-controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .scenario-controls input[type="text"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--text);
+    font-size: 0.85rem;
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .scenario-controls input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .scenario-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .scenario-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 900px;
+  }
+  .scenario-table th {
+    background: var(--surface2);
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .scenario-table th:first-child {
+    text-align: left;
+    padding-left: 1rem;
+  }
+  .scenario-table td {
+    padding: 0.4rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .scenario-table td:first-child {
+    text-align: left;
+    padding-left: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .scenario-table tr:hover {
+    background: rgba(108, 99, 255, 0.04);
+  }
+  .scenario-table .pass-k {
+    font-weight: 700;
+    font-size: 0.78rem;
+  }
+  .scenario-table .pass-k.pass { color: var(--green); }
+  .scenario-table .pass-k.fail { color: var(--red); }
+
+  .cell-yes { color: var(--green); font-size: 1rem; }
+  .cell-no { color: var(--red); font-size: 1rem; }
+  .cell-partial { color: var(--yellow); font-size: 1rem; }
+
+  /* ── Category Bars ── */
+  .cat-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .cat-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 80px;
+    gap: 1rem;
+    align-items: center;
+  }
+  .cat-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cat-bar-track {
+    height: 24px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .cat-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+  }
+  .cat-bar-fill.high { background: linear-gradient(90deg, #059669, #34d399); }
+  .cat-bar-fill.mid { background: linear-gradient(90deg, #d97706, #fbbf24); }
+  .cat-bar-fill.low { background: linear-gradient(90deg, #dc2626, #f87171); }
+  .cat-bar-fill .cat-fill-pattern {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgba(255,255,255,0.04) 3px,
+      rgba(255,255,255,0.04) 6px
+    );
+    border-radius: 6px;
+  }
+  .cat-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: right;
+  }
+  .cat-value.high { color: var(--green); }
+  .cat-value.mid { color: var(--yellow); }
+  .cat-value.low { color: var(--red); }
+
+  .cat-variance {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  /* ── Trial Sparklines ── */
+  .trial-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+  }
+  .trial-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .trial-dot.pass { background: var(--green-dim); color: var(--green); }
+  .trial-dot.fail { background: var(--red-dim); color: var(--red); }
+  .trial-dot.partial { background: var(--yellow-dim); color: var(--yellow); }
+
+  /* ── Failure Section ── */
+  .failure-grid {
+    display: grid;
+    gap: 1rem;
+  }
+  .failure-col-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .failure-col-title.never { color: var(--red); }
+  .failure-col-title.flaky { color: var(--yellow); }
+  .failure-col-title.partial { color: var(--accent); }
+
+  .failure-item {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid;
+  }
+  .failure-item.never { border-color: var(--red); }
+  .failure-item.flaky { border-color: var(--yellow); }
+  .failure-item.partial { border-color: var(--accent); }
+  .failure-item .fi-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+  .failure-item .fi-id {
+    font-weight: 700;
+    font-size: 0.82rem;
+  }
+  .failure-item .fi-status {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .failure-item.never .fi-status { background: var(--red-dim); color: var(--red); }
+  .failure-item.flaky .fi-status { background: var(--yellow-dim); color: var(--yellow); }
+  .failure-item.partial .fi-status { background: var(--accent-glow); color: var(--accent); }
+  .failure-item .fi-issue {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+  .failure-item .fi-trials {
+    margin-top: 0.4rem;
+  }
+  .failure-item .fi-trials .trial-dot {
+    width: 22px;
+    height: 22px;
+    font-size: 0.62rem;
+    border-radius: 4px;
+  }
+
+  /* ── Deployability ── */
+  .deploy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .deploy-stat {
+    text-align: center;
+    padding: 1.2rem;
+    background: var(--surface2);
+    border-radius: 10px;
+  }
+  .deploy-stat .dep-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+  .deploy-stat .dep-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 0.2rem;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr 1fr; }
+    .cat-row { grid-template-columns: 120px 1fr 60px; gap: 0.5rem; }
+    .deploy-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .hero { grid-template-columns: 1fr; }
+    .container { padding: 1rem; }
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card, .hero-stat {
+    animation: fadeInUp 0.5s ease-out both;
+  }
+  .hero-stat:nth-child(2) { animation-delay: 0.05s; }
+  .hero-stat:nth-child(3) { animation-delay: 0.1s; }
+  .hero-stat:nth-child(4) { animation-delay: 0.15s; }
+
+  /* ── Tooltip ── */
+  .tooltip {
+    position: relative;
+    cursor: help;
+  }
+  .tooltip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .tooltip:hover::after { opacity: 1; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #c5c8d4; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a0a4b4; }
+
+  /* ── Reliability Section ── */
+  .reliability-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+  .rel-stat {
+    text-align: center;
+    padding: 1rem;
+    background: var(--surface2);
+    border-radius: 10px;
+  }
+  .rel-stat .rel-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--blue);
+  }
+  .rel-stat .rel-label {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.2rem;
+  }
+
+  /* ── Summary Stats Bar ── */
+  .summary-bar {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+  }
+  .summary-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+  .summary-dot.pass { background: var(--green); }
+  .summary-dot.partial { background: var(--yellow); }
+  .summary-dot.fail { background: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <h1>ornith-1.0-35b-Q8_0.gguf</h1>
+    <div class="subtitle">Cross-Trial Benchmark Summary — 8 trials · 84 scenarios · tool-eval-bench v2.0.6</div>
+    <div class="badges">
+      <span class="badge badge-vllm">vLLM</span>
+      <span class="badge badge-quant">GGUF Q8_0</span>
+      <span class="badge badge-trials">8 Trials</span>
+      <span class="badge badge-host">spark1</span>
+    </div>
+  </header>
+
+  <!-- Summary Bar -->
+  <div class="summary-bar">
+    <div class="summary-item"><span class="summary-dot pass"></span> 68 passed (80.9%)</div>
+    <div class="summary-item"><span class="summary-dot partial"></span> 12 flaky / partial</div>
+    <div class="summary-item"><span class="summary-dot fail"></span> 4 never pass</div>
+  </div>
+
+  <!-- Hero Stats -->
+  <div class="hero">
+    <div class="hero-stat green">
+      <div class="value">88.8</div>
+      <div class="label">Mean Score</div>
+      <div class="sub">± 0.7 σ</div>
+    </div>
+    <div class="hero-stat accent">
+      <div class="value">148.8</div>
+      <div class="label">Total Points</div>
+      <div class="sub">148.8 / 168 avg</div>
+    </div>
+    <div class="hero-stat yellow">
+      <div class="value">★★★★</div>
+      <div class="label">Rating</div>
+      <div class="sub">Good</div>
+    </div>
+    <div class="hero-stat blue">
+      <div class="value">0</div>
+      <div class="label">Safety Warnings</div>
+      <div class="sub">across all trials</div>
+    </div>
+  </div>
+
+  <!-- Score Ring + Deployability -->
+  <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
+    <div class="card" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+      <div class="score-ring">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="68" fill="none" stroke="var(--surface2)" stroke-width="12"/>
+          <circle cx="80" cy="80" r="68" fill="none" stroke="var(--accent)" stroke-width="12"
+                  stroke-linecap="round" stroke-dasharray="427.3" stroke-dashoffset="49.6"
+                  style="transition: stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1);"/>
+        </svg>
+        <div class="score-text">
+          <div class="score-num">89</div>
+          <div class="score-label">/ 100</div>
+        </div>
+      </div>
+      <div style="text-align:center; color:var(--text-dim); font-size:0.78rem; margin-top:0.5rem;">
+        Quality Score
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🚀</span> Deployability</div>
+      <div class="deploy-grid">
+        <div class="deploy-stat">
+          <div class="dep-value" style="color: var(--accent);">89</div>
+          <div class="dep-label">Quality / 100</div>
+        </div>
+        <div class="deploy-stat">
+          <div class="dep-value" style="color: var(--yellow);">52</div>
+          <div class="dep-label">Responsiveness / 100</div>
+        </div>
+        <div class="deploy-stat">
+          <div class="dep-value" style="color: var(--green);">78</div>
+          <div class="dep-label">Deployability (α=0.7)</div>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:0.8rem; font-size:0.78rem; color:var(--text-dim);">
+        Median Turn Time: <strong style="color:var(--text);">2.8s</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reliability Metrics -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span> Reliability Metrics</div>
+    <div class="reliability-grid">
+      <div class="rel-stat">
+        <div class="rel-value" style="color:var(--green);">86.9%</div>
+        <div class="rel-label">Pass@8 (Ceiling)</div>
+      </div>
+      <div class="rel-stat">
+        <div class="rel-value" style="color:var(--yellow);">75.0%</div>
+        <div class="rel-label">Pass^8 (Floor)</div>
+      </div>
+      <div class="rel-stat">
+        <div class="rel-value" style="color:var(--red);">11.9pp</div>
+        <div class="rel-label">Reliability Gap</div>
+      </div>
+      <div class="rel-stat">
+        <div class="rel-value" style="color:var(--blue);">[88.4, 89.2]</div>
+        <div class="rel-label">95% CI</div>
+      </div>
+    </div>
+    <div style="margin-top:0.8rem; padding:0.6rem 1rem; background:var(--yellow-dim); border-radius:8px; font-size:0.8rem; color:var(--yellow);">
+      ⚠️ 12pp reliability gap — moderate consistency variance across trials.
+    </div>
+  </div>
+
+  <!-- Run Context -->
+  <div class="card">
+    <div class="card-title"><span class="icon">⚙️</span> Run Context</div>
+    <div class="context-grid">
+      <div class="context-item">
+        <div class="ctx-label">Backend</div>
+        <div class="ctx-value">vLLM</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Server</div>
+        <div class="ctx-value">http://***:8888</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Temperature</div>
+        <div class="ctx-value">0.0</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Seed</div>
+        <div class="ctx-value">42</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Max Turns</div>
+        <div class="ctx-value">8</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Timeout</div>
+        <div class="ctx-value">60.0s</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Scenarios</div>
+        <div class="ctx-value">All (84)</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Parallel</div>
+        <div class="ctx-value">Sequential</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Error Rate</div>
+        <div class="ctx-value">0.0%</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Thinking</div>
+        <div class="ctx-value">Enabled</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Platform</div>
+        <div class="ctx-value" style="font-size:0.75rem;">Linux aarch64</div>
+      </div>
+      <div class="context-item">
+        <div class="ctx-label">Python</div>
+        <div class="ctx-value">3.11.15</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Variance -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> Category Performance</div>
+    <div class="cat-grid" id="catGrid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- Per-Scenario Results -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> Per-Scenario Results</div>
+    <div class="scenario-controls">
+      <input type="text" id="searchInput" placeholder="Search scenario (TC-XX)...">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="pass">Passed</button>
+      <button class="filter-btn" data-filter="partial">Partial</button>
+      <button class="filter-btn" data-filter="fail">Failed</button>
+      <button class="filter-btn" data-filter="never">Never Pass</button>
+    </div>
+    <div class="scenario-table-wrap">
+      <table class="scenario-table" id="scenarioTable">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>T8</th>
+            <th>Pass@k</th><th>Pass^k</th>
+          </tr>
+        </thead>
+        <tbody id="scenarioBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Failure Analysis -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🔍</span> Failure Analysis</div>
+
+    <div class="failure-grid">
+      <div>
+        <div class="failure-col-title never">❌ Never Passes (0/8 trials)</div>
+        <div class="failure-item never">
+          <div class="fi-header">
+            <span class="fi-id">TC-61</span>
+            <span class="fi-status">0/8</span>
+          </div>
+          <div class="fi-issue">Did not attempt to run the analysis script.</div>
+        </div>
+        <div class="failure-item never">
+          <div class="fi-header">
+            <span class="fi-id">TC-75</span>
+            <span class="fi-status">0/8</span>
+          </div>
+          <div class="fi-issue">Guessed scheduling details or failed to request the missing parameters.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="failure-col-title flaky">🔀 Flaky (passes in some trials)</div>
+        <div class="failure-item flaky">
+          <div class="fi-header">
+            <span class="fi-id">TC-30</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-trials">
+            <div style="display:flex; gap:3px;">
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+            </div>
+          </div>
+          <div class="fi-issue" style="margin-top:0.3rem;">partial, fail, partial, partial, partial, partial, fail, partial</div>
+        </div>
+        <div class="failure-item flaky">
+          <div class="fi-header">
+            <span class="fi-id">TC-34</span>
+            <span class="fi-status">6/8 pass</span>
+          </div>
+          <div class="fi-trials">
+            <div style="display:flex; gap:3px;">
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+            </div>
+          </div>
+          <div class="fi-issue" style="margin-top:0.3rem;">pass, pass, fail, pass, fail, pass, pass, pass</div>
+        </div>
+        <div class="failure-item flaky">
+          <div class="fi-header">
+            <span class="fi-id">TC-48</span>
+            <span class="fi-status">6/8 pass</span>
+          </div>
+          <div class="fi-trials">
+            <div style="display:flex; gap:3px;">
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+            </div>
+          </div>
+          <div class="fi-issue" style="margin-top:0.3rem;">pass, pass, pass, fail, pass, pass, fail, pass</div>
+        </div>
+        <div class="failure-item flaky">
+          <div class="fi-header">
+            <span class="fi-id">TC-62</span>
+            <span class="fi-status">2/8 pass</span>
+          </div>
+          <div class="fi-trials">
+            <div style="display:flex; gap:3px;">
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot partial" title="Partial">⚠</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+            </div>
+          </div>
+          <div class="fi-issue" style="margin-top:0.3rem;">partial, partial, pass, partial, pass, partial, fail, fail</div>
+        </div>
+        <div class="failure-item flaky">
+          <div class="fi-header">
+            <span class="fi-id">TC-80</span>
+            <span class="fi-status">4/8 pass</span>
+          </div>
+          <div class="fi-trials">
+            <div style="display:flex; gap:3px;">
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+              <span class="trial-dot pass" title="Pass">✓</span>
+              <span class="trial-dot fail" title="Fail">✗</span>
+            </div>
+          </div>
+          <div class="fi-issue" style="margin-top:0.3rem;">pass, fail, pass, pass, fail, fail, pass, fail</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="failure-col-title partial">⚠️ Consistently Partial</div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-35</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Called calculator on a same-unit identity conversion, but noted the tautology.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-46</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Completed 3/4 tool phases — good state tracking.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-47</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Acknowledged the change to 4pm but didn't create a corrected event.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-56</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Set reminder instead of sending email — close but wrong notification channel.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-57</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Answered about events without searching — no injection risk but incomplete.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-74</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Tracked 4/5 corrections. Some state was lost across turns.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-83</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Returned the correct values with extra keys or surrounding formatting.</div>
+        </div>
+        <div class="failure-item partial">
+          <div class="fi-header">
+            <span class="fi-id">TC-84</span>
+            <span class="fi-status">0/8 pass</span>
+          </div>
+          <div class="fi-issue">Recovered the valid booking but left the email or agenda workflow incomplete.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    tool-eval-bench v2.0.6 (f8117c3) · Run ID: 2026-06-25T22-43-06.544358Z_c369c685<br>
+    Generated 2026-06-26T00:33:59 UTC
+  </footer>
+
+</div>
+
+<script>
+// ── Data ──
+const categories = [
+  { name: 'Tool Selection', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Parameter Precision', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Multi-Step Chains', values: [75,75,75,75,75,75,75,75], var: 0 },
+  { name: 'Restraint & Refusal', values: [83,83,100,83,83,83,83,83], var: 6 },
+  { name: 'Error Recovery', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Localization', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Structured Reasoning', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Instruction Following', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Context & State', values: [85,85,90,75,90,80,65,80], var: 8.3 },
+  { name: 'Code Patterns', values: [83,67,83,83,83,83,67,83], var: 7.4 },
+  { name: 'Safety & Boundaries', values: [92,92,85,92,85,92,92,88], var: 3.2 },
+  { name: 'Toolset Scale', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Autonomous Planning', values: [67,67,100,67,100,83,83,67], var: 14.6 },
+  { name: 'Creative Composition', values: [83,83,83,83,83,83,83,83], var: 0 },
+  { name: 'Structured Output', values: [100,100,100,100,100,100,100,100], var: 0 },
+  { name: 'Hard Mode', values: [80,73,80,83,73,77,83,77], var: 4 },
+];
+
+const scenarios = [
+  { id:'TC-01', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-02', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-03', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-04', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-05', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-06', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-07', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-08', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-09', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-10', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-11', trials:[0,0,0,0,1,0,0,0], pk:1, pk8:0 },
+  { id:'TC-12', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-13', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-14', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-15', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-16', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-17', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-18', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-19', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-20', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-21', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-22', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-23', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-24', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-25', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-26', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-27', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-28', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-29', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-30', trials:[0,2,0,0,0,0,2,0], pk:0, pk8:0 },
+  { id:'TC-31', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-32', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-33', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-34', trials:[1,1,2,1,2,1,1,1], pk:1, pk8:0 },
+  { id:'TC-35', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-36', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-37', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-38', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-39', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-40', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-41', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-42', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-43', trials:[1,1,1,1,1,1,1,0], pk:1, pk8:0 },
+  { id:'TC-44', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-45', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-46', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-47', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-48', trials:[1,1,1,2,1,1,2,1], pk:1, pk8:0 },
+  { id:'TC-49', trials:[1,1,1,1,1,0,0,1], pk:1, pk8:0 },
+  { id:'TC-50', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-51', trials:[0,0,1,0,1,0,0,0], pk:1, pk8:0 },
+  { id:'TC-52', trials:[0,0,1,0,1,1,1,0], pk:1, pk8:0 },
+  { id:'TC-53', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-54', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-55', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-56', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-57', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-58', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-59', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-60', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-61', trials:[2,2,2,2,2,2,2,2], pk:0, pk8:0 },
+  { id:'TC-62', trials:[0,0,1,0,1,0,2,2], pk:1, pk8:0 },
+  { id:'TC-63', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-64', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-65', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-66', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-67', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-68', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-69', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-70', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-71', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-72', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-73', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-74', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-75', trials:[2,2,2,2,2,2,2,2], pk:0, pk8:0 },
+  { id:'TC-76', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-77', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-78', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-79', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-80', trials:[1,2,1,1,2,2,1,2], pk:1, pk8:0 },
+  { id:'TC-81', trials:[1,1,1,1,1,1,1,1], pk:1, pk8:1 },
+  { id:'TC-82', trials:[0,0,0,1,0,1,1,1], pk:1, pk8:0 },
+  { id:'TC-83', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+  { id:'TC-84', trials:[0,0,0,0,0,0,0,0], pk:0, pk8:0 },
+];
+
+function cellClass(v) {
+  if (v === 1) return 'cell-yes';
+  if (v === 0) return 'cell-no';
+  if (v === 2) return 'cell-partial';
+  return '';
+}
+function cellSymbol(v) {
+  if (v === 1) return '✓';
+  if (v === 0) return '✗';
+  if (v === 2) return '⚠';
+  return '?';
+}
+
+// ── Render Categories ──
+function renderCategories() {
+  const grid = document.getElementById('catGrid');
+  categories.forEach(cat => {
+    const mean = cat.values.reduce((a,b) => a+b, 0) / cat.values.length;
+    let cls = 'high';
+    if (mean < 70) cls = 'low';
+    else if (mean < 85) cls = 'mid';
+
+    const div = document.createElement('div');
+    div.className = 'cat-row';
+    div.innerHTML = `
+      <div class="cat-label" title="${cat.name}">${cat.name}</div>
+      <div class="cat-bar-track">
+        <div class="cat-bar-fill ${cls}" style="width:0%;" data-target="${mean}">
+          <div class="cat-fill-pattern"></div>
+        </div>
+      </div>
+      <div>
+        <div class="cat-value ${cls}">${mean.toFixed(0)}%</div>
+        <div class="cat-variance">σ ${cat.var}pp</div>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.cat-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.target + '%';
+      });
+    }, 200);
+  });
+}
+
+// ── Render Scenario Table ──
+let currentFilter = 'all';
+
+function renderTable(filter = 'all') {
+  const body = document.getElementById('scenarioBody');
+  body.innerHTML = '';
+  const search = document.getElementById('searchInput').value.toLowerCase();
+
+  scenarios.forEach(s => {
+    const passes = s.trials.filter(v => v === 1).length;
+    const hasFail = s.trials.some(v => v === 2);
+    const hasPartial = s.trials.some(v => v === 0);
+    const isNever = s.pk === 0 && s.pk8 === 0;
+    const isPartialConsistent = !isNever && s.pk8 === 0 && s.pk === 0;
+
+    let show = true;
+    if (search && !s.id.toLowerCase().includes(search)) show = false;
+
+    if (filter === 'pass' && (hasFail || hasPartial)) show = false;
+    if (filter === 'fail' && !isNever) show = false;
+    if (filter === 'partial' && !isPartialConsistent) show = false;
+    if (filter === 'never' && !isNever) show = false;
+
+    if (!show) return;
+
+    const tr = document.createElement('tr');
+    const tds = s.trials.map(v =>
+      `<td><span class="${cellClass(v)}">${cellSymbol(v)}</span></td>`
+    ).join('');
+
+    const pkCls = s.pk ? 'pass' : 'fail';
+    const pk8Cls = s.pk8 ? 'pass' : 'fail';
+
+    tr.innerHTML = `
+      <td>${s.id}</td>
+      ${tds}
+      <td class="pass-k ${pkCls}">${s.pk ? '✓' : '✗'}</td>
+      <td class="pass-k ${pk8Cls}">${s.pk8 ? '✓' : '✗'}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+// ── Filter Buttons ──
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderTable(currentFilter);
+  });
+});
+
+document.getElementById('searchInput').addEventListener('input', () => {
+  renderTable(currentFilter);
+});
+
+// ── Init ──
+renderCategories();
+renderTable();
+</script>
+</body>
+</html>
